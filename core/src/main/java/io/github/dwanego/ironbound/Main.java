@@ -21,23 +21,18 @@ public class Main extends Game {
     @Override
     public void create() {
         setScreen(new FirstScreen());
-        spriteBatch = new SpriteBatch();
-        camera = new OrthographicCamera();
-        viewport = new FitViewport(800, 600, camera);
-        viewport.apply();
     }
-
 
     @Override
     public void resize(int width, int height) {
-        viewport.update(width, height, true); // true centers the camera
+        super.resize(width, height);
     }
 
     @Override
     public void render() {
         // organize code into three methods
-        ScreenUtils.clear(0.1f, 0.1f, 0.1f, 1f);
-        viewport.apply();
+        //ScreenUtils.clear(0.1f, 0.1f, 0.1f, 1f);
+        super.render();
         input();
         logic();
         draw();
@@ -52,19 +47,19 @@ public class Main extends Game {
     }
 
     private void draw() {
-        viewport.apply();
-        spriteBatch.setProjectionMatrix(camera.combined);
+        //viewport.apply();
+        //spriteBatch.setProjectionMatrix(camera.combined);
 
-        spriteBatch.begin();
+        //spriteBatch.begin();
 
         // Draw Iron Bound's sprites here.
 
-        spriteBatch.end();
+        //spriteBatch.end();
     }
     @Override
     public void dispose() {
-        if (spriteBatch != null) {
+        /*if (spriteBatch != null) {
             spriteBatch.dispose();
-        }
+        }*/
     }
 }

@@ -1,21 +1,25 @@
 
 package io.github.dwanego.ironbound;
 
-import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.ScreenAdapter;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
+import io.github.dwanego.ironbound.player.Player;
+import io.github.dwanego.ironbound.player.PlayerController;
 
 public class FirstScreen extends ScreenAdapter {
     private SpriteBatch batch;
-    private Texture playerSheet;
-    private TextureRegion playerFrame;
     private OrthographicCamera camera;
     private FitViewport viewport;
+    private ShapeRenderer shapeRenderer;
+    private Player player;
+    private PlayerController playerController;
+    private Player player2;
+    private PlayerController player2Controller;
 
     @Override
     public void show() {
@@ -23,14 +27,23 @@ public class FirstScreen extends ScreenAdapter {
         viewport = new FitViewport(800, 600, camera);
 
         batch = new SpriteBatch();
+        shapeRenderer = new ShapeRenderer();
 
-        playerSheet = new Texture(
-            Gdx.files.internal("player-sheet.png")
+        player = new Player(100f, 100f);
+        playerController = new PlayerController(
+            player,
+            Keys.A,
+            Keys.D,
+            Keys.W,
+            Keys.S
         );
-
-        // Select the first 64x64 cell at the top-left.
-        playerFrame = new TextureRegion(
-            playerSheet, 0, 0, 64, 64
+        player2 = new Player(600f, 100f, true);
+        player2Controller = new PlayerController(
+            player2,
+            Keys.LEFT,
+            Keys.RIGHT,
+            Keys.UP,
+            Keys.DOWN
         );
     }
 
@@ -41,15 +54,32 @@ public class FirstScreen extends ScreenAdapter {
 
     @Override
     public void render(float delta) {
-        ScreenUtils.clear(0.1f, 0.1f, 0.1f, 1f);
+        ScreenUtils.clear(0.53f, 0.81f, 0.92f, 1f);
+
+        playerController.update();
+        player.update(delta);
+        player2Controller.update();
+        player2.update(delta);
 
         viewport.apply();
+        shapeRenderer.setProjectionMatrix(camera.combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        shapeRenderer.setColor(0.2f, 0.65f, 0.2f, 1f);
+        float groundBottom = camera.position.y - viewport.getWorldHeight() / 2f;
+        shapeRenderer.rect(
+            camera.position.x - viewport.getWorldWidth() / 2f,
+            groundBottom,
+            viewport.getWorldWidth(),
+            100f - groundBottom
+        );
+        shapeRenderer.end();
+
         batch.setProjectionMatrix(camera.combined);
 
         batch.begin();
 
-        // Draw the selected frame, enlarged to 128x128.
-        batch.draw(playerFrame, 100, 100, 128, 128);
+        player.render(batch);
+        player2.render(batch);
 
         batch.end();
     }
@@ -57,6 +87,8 @@ public class FirstScreen extends ScreenAdapter {
     @Override
     public void dispose() {
         batch.dispose();
-        playerSheet.dispose();
+        shapeRenderer.dispose();
+        player.dispose();
+        player2.dispose();
     }
 }

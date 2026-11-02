@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.Rectangle;
 import java.util.Arrays;
 
 public class Player {
@@ -21,14 +22,37 @@ public class Player {
     private static final float SLIDE_FRAME_DURATION = 0.06f;
     private static final float SLIDE_COOLDOWN = 1f;
     private static final float RUNNING_SPEED = 180f;
-    private static final float SPRINTING_SPEED = 330f;
+    private static final float SPRINTING_SPEED = 450f;
+    private static final float MAX_HEALTH = 100f;
+    private static final float HIT_FLASH_DURATION = 0.14f;
+    private static final float BLOCK_ANIMATION_DURATION = 0.18f;
+    private static final float ATTACK_FRAME_DURATION = 0.07f;
+    private static final float ATTACK_ACTIVE_START = 0.14f;
+    private static final float ATTACK_ACTIVE_END = 0.42f;
+    private static final float ATTACK_DECELERATION = 3000f;
+    private static final float ATTACK_DAMAGE = 10f;
+    private static final float ATTACK_HITBOX_WIDTH = 44f;
+    private static final float ATTACK_HITBOX_HEIGHT = 22f;
+    private static final float ATTACK_HITBOX_X_OFFSET = -34f;
+    private static final float ATTACK_HITBOX_Y_OFFSET = 50f;
+    private static final float HURTBOX_WIDTH = 22f;
+    private static final float HURTBOX_HEIGHT = 89f;
+    private static final float HURTBOX_X_OFFSET = 53f;
+    private static final float HURTBOX_Y_OFFSET = 0f;
+    private static final float GUARD_HURTBOX_HEIGHT = HURTBOX_HEIGHT - 10f;
+    private static final float SLIDING_HURTBOX_HEIGHT = 44f;
+    private static final float SLIDING_HURTBOX_Y_OFFSET = 0f;
+    private static final int BLOCK_FRAME_INDEX = 6;
+    private static final int ACTION_FRAME_COUNT = 8;
     private static final int FRAME_SIZE = 64;
     private static final int WALKING_SHEET_ROW = 4;
     private static final int SPRINTING_SHEET_ROW = 6;
     private static final int RUNNING_SHEET_ROW = 5;
     private static final int SLIDING_SHEET_ROW = 7;
     private static final int JUMPING_SHEET_ROW = 8;
-
+    private static final int IDLE_SHEET_ROW = 1;
+    private static final int ATTACKING_SHEET_ROW = 3;
+    private static final int DYING_SHEET_ROW = 11;
     private float movementDirection = 0f;
     private MovementMode movementMode = MovementMode.SPRINTING;
     private static final float GRAVITY = 1800f;
@@ -67,6 +91,8 @@ public class Player {
     private final Animation<TextureRegion> sprintingAnimation;
     private final Animation<TextureRegion> slidingAnimation;
     private final Animation<TextureRegion> jumpingAnimation;
+    private final Animation<TextureRegion> attackingAnimation;
+    private final Animation<TextureRegion> dyingAnimation;
     private Animation<TextureRegion> transitionFromAnimation;
     private float animationTime;
     private float jumpingAnimationTime;
@@ -74,6 +100,15 @@ public class Player {
     private float transitionStartMaxSpeed = MovementMode.WALKING.maxSpeed;
     private float slideTimeRemaining;
     private float slideCooldownRemaining;
+    private float attackTime;
+    private float deathTime;
+    private float blockTimeRemaining;
+    private float hitFlashTimeRemaining;
+    private float health = MAX_HEALTH;
+    private boolean attacking;
+    private boolean attackHasHit;
+    private boolean guarding;
+    private boolean dead;
     private boolean facingLeft;
 
     public Player(float x, float y) {
@@ -128,6 +163,18 @@ public class Player {
         slidingAnimation.setPlayMode(Animation.PlayMode.NORMAL);
         jumpingAnimation = createAnimation(frames[JUMPING_SHEET_ROW - 1], 8, 0.08f);
         jumpingAnimation.setPlayMode(Animation.PlayMode.NORMAL);
+        attackingAnimation = createAnimation(
+            frames[ATTACKING_SHEET_ROW - 1],
+            ACTION_FRAME_COUNT,
+            ATTACK_FRAME_DURATION
+        );
+        attackingAnimation.setPlayMode(Animation.PlayMode.NORMAL);
+        dyingAnimation = createAnimation(
+            frames[DYING_SHEET_ROW - 1],
+            ACTION_FRAME_COUNT,
+            0.1f
+        );
+        dyingAnimation.setPlayMode(Animation.PlayMode.NORMAL);
     }
 
     private Animation<TextureRegion> createAnimation(
@@ -150,6 +197,13 @@ public class Player {
 
     public void update(float delta) {
         float frameTime = Math.min(Math.max(delta, 0f), MAX_FRAME_TIME);
+        hitFlashTimeRemaining = Math.max(0f, hitFlashTimeRemaining - frameTime);
+        blockTimeRemaining = Math.max(0f, blockTimeRemaining - frameTime);
+        if (dead) {
+            deathTime = Math.min(dyingAnimation.getAnimationDuration(), deathTime + frameTime);
+            return;
+        }
+
         accumulator += frameTime;
 
         while (accumulator >= TIME_STEP) {
@@ -167,7 +221,9 @@ public class Player {
 // Apply gravity.
             forceY = -weight * GRAVITY;
 
-            if (movementDirection != 0f) {
+            if (guarding || attacking) {
+                forceX = drag * velocityX;
+            } else if (movementDirection != 0f) {
                 forceX = movementDirection * weight * MOVE_ACCELERATION + drag * velocityX;
             } else if (slideTimeRemaining > 0f) {
                 forceX = drag * velocityX;
@@ -185,6 +241,14 @@ public class Player {
                 -getCurrentMaxSpeed(),
                 Math.min(getCurrentMaxSpeed(), velocityX)
             );
+            if (guarding) {
+                velocityX = 0f;
+            } else if (attacking) {
+                float deceleration = ATTACK_DECELERATION * TIME_STEP;
+                velocityX = Math.abs(velocityX) <= deceleration
+                    ? 0f
+                    : velocityX - Math.signum(velocityX) * deceleration;
+            }
 
             x += velocityX * TIME_STEP;
             y += velocityY * TIME_STEP;
@@ -211,9 +275,20 @@ public class Player {
         if (!grounded) {
             jumpingAnimationTime += frameTime;
         }
+        if (attacking) {
+            attackTime += frameTime;
+            if (attackTime >= attackingAnimation.getAnimationDuration()) {
+                attacking = false;
+            }
+        }
     }
 
     public void setMovement(float direction, MovementMode mode) {
+        if (dead) {
+            movementDirection = 0f;
+            return;
+        }
+
         movementDirection = Math.max(-1f, Math.min(1f, direction));
         if (mode != movementMode) {
             float progress = getTransitionProgress();
@@ -232,7 +307,7 @@ public class Player {
     }
 
     public void slide() {
-        if (!grounded || slideCooldownRemaining > 0f
+        if (dead || guarding || attacking || !grounded || slideCooldownRemaining > 0f
             || (movementDirection == 0f && Math.abs(velocityX) <= MOVING_THRESHOLD)) {
             return;
         }
@@ -251,6 +326,34 @@ public class Player {
 
         float renderX = previousX + (x - previousX) * alpha;
         float renderY = previousY + (y - previousY) * alpha;
+
+        if (dead) {
+            drawFrame(
+                batch,
+                dyingAnimation.getKeyFrame(deathTime, false),
+                renderX,
+                renderY
+            );
+            return;
+        }
+        if (guarding || blockTimeRemaining > 0f) {
+            drawFrame(
+                batch,
+                attackingAnimation.getKeyFrames()[BLOCK_FRAME_INDEX],
+                renderX,
+                renderY
+            );
+            return;
+        }
+        if (attacking) {
+            drawFrame(
+                batch,
+                attackingAnimation.getKeyFrame(attackTime, false),
+                renderX,
+                renderY
+            );
+            return;
+        }
 
         TextureRegion frame = !grounded
             ? jumpingAnimation.getKeyFrame(jumpingAnimationTime, false)
@@ -364,9 +467,114 @@ public class Player {
     }
 
     public void jump() {
-        if (grounded) {
+        if (!dead && !attacking && grounded) {
             jumpRequested = true;
         }
+    }
+
+    public void attack() {
+        if (dead || guarding || attacking || slideTimeRemaining > 0f) {
+            return;
+        }
+
+        movementDirection = 0f;
+        slideTimeRemaining = 0f;
+        attacking = true;
+        attackTime = 0f;
+        attackHasHit = false;
+    }
+
+    public boolean tryHit(Player target) {
+        Rectangle hitbox = getAttackHitbox();
+        if (hitbox == null || attackHasHit || target.dead || !hitbox.overlaps(target.getHurtbox())) {
+            return false;
+        }
+
+        attackHasHit = true;
+        target.takeDamage(ATTACK_DAMAGE);
+        return true;
+    }
+
+    public Rectangle getAttackHitbox() {
+        if (!attacking || attackTime < ATTACK_ACTIVE_START || attackTime > ATTACK_ACTIVE_END) {
+            return null;
+        }
+
+        float hitboxX = facingLeft
+            ? x - ATTACK_HITBOX_WIDTH - ATTACK_HITBOX_X_OFFSET
+            : x + PLAYER_SIZE + ATTACK_HITBOX_X_OFFSET;
+        return new Rectangle(
+            hitboxX,
+            y + ATTACK_HITBOX_Y_OFFSET,
+            ATTACK_HITBOX_WIDTH,
+            ATTACK_HITBOX_HEIGHT
+        );
+    }
+
+    public Rectangle getHurtbox() {
+        boolean lowProfile = guarding || slideTimeRemaining > 0f;
+        return new Rectangle(
+            x + HURTBOX_X_OFFSET,
+            y + (lowProfile ? SLIDING_HURTBOX_Y_OFFSET : HURTBOX_Y_OFFSET),
+            HURTBOX_WIDTH,
+            lowProfile ? GUARD_HURTBOX_HEIGHT : HURTBOX_HEIGHT
+        );
+    }
+
+    public void setGuarding(boolean guarding) {
+        this.guarding = guarding && !dead && movementDirection == 0f;
+        if (this.guarding) {
+            movementDirection = 0f;
+            velocityX = 0f;
+            slideTimeRemaining = 0f;
+        }
+    }
+
+    public void takeDamage(float damage) {
+        if (damage <= 0f || dead) {
+            return;
+        }
+
+        if (guarding) {
+            damage *= 0.2f;
+            blockTimeRemaining = BLOCK_ANIMATION_DURATION;
+        }
+
+        health = Math.max(0f, health - damage);
+        hitFlashTimeRemaining = HIT_FLASH_DURATION;
+        if (health == 0f) {
+            dead = true;
+            deathTime = 0f;
+            attacking = false;
+            movementDirection = 0f;
+            velocityX = 0f;
+            velocityY = 0f;
+            slideTimeRemaining = 0f;
+        }
+    }
+
+    public float getHealth() {
+        return health;
+    }
+
+    public float getMaxHealth() {
+        return MAX_HEALTH;
+    }
+
+    public boolean isDead() {
+        return dead;
+    }
+
+    public float getHitFlashAmount() {
+        return hitFlashTimeRemaining / HIT_FLASH_DURATION;
+    }
+
+    public float getX() {
+        return x;
+    }
+
+    public float getY() {
+        return y;
     }
 
     public void dispose() {
@@ -376,7 +584,7 @@ public class Player {
     public enum MovementMode {
         WALKING(120f),
         RUNNING(240f),
-        SPRINTING(360f);
+        SPRINTING(480f);
 
         private final float maxSpeed;
 

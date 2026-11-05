@@ -1,3 +1,6 @@
+plugins {
+  id 'org.jetbrains.kotlin.jvm'
+}
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 eclipse.project.name = appName + '-core'
 
@@ -9,8 +12,15 @@ dependencies {
   if(enableGraalNative == 'true') {
     implementation "io.github.berstanio:gdx-svmhelper-annotations:$graalHelperVersion"
   }
+  testImplementation 'org.jetbrains.kotlin:kotlin-test'
 }
 
 jar {
   duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+repositories {
+  mavenCentral()
+}
+kotlin {
+  jvmToolchain(17)
 }

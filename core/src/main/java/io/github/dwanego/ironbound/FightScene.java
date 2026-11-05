@@ -16,7 +16,7 @@ import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import io.github.dwanego.ironbound.player.Player;
 import io.github.dwanego.ironbound.player.PlayerController;
 
-public class FirstScreen extends ScreenAdapter {
+public class FightScene extends ScreenAdapter {
     private SpriteBatch batch;
     private OrthographicCamera camera;
     private ExtendViewport viewport;

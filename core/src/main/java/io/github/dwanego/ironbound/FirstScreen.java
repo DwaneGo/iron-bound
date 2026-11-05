@@ -26,7 +26,7 @@ public class FirstScreen extends ScreenAdapter {
     private PlayerController playerController;
     private Player player2;
     private PlayerController player2Controller;
-    private boolean showHitboxes = true;;
+    private boolean showHitboxes = true;
 
     private static final float HEALTH_BAR_HEIGHT = 20f;
     private static final float HEALTH_BAR_MARGIN = 24f;
@@ -137,8 +137,10 @@ public class FirstScreen extends ScreenAdapter {
         batch.begin();
 
         batch.setShader(hitFlashShader);
+        hitFlashShader.bind();
         hitFlashShader.setUniformf("u_flash", player.getHitFlashAmount());
         player.render(batch);
+        batch.flush();
         hitFlashShader.setUniformf("u_flash", player2.getHitFlashAmount());
         player2.render(batch);
         batch.setShader(null);

@@ -44,7 +44,7 @@ public class PlayerController {
             player.jump();
         }
         if (Gdx.input.isKeyJustPressed(attackKey)) {
-            player.attack();
+            player.punch();
         }
     }
 }

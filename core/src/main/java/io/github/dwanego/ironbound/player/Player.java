@@ -27,14 +27,7 @@ public class Player {
     private static final float HIT_FLASH_DURATION = 0.14f;
     private static final float BLOCK_ANIMATION_DURATION = 0.18f;
     private static final float ATTACK_FRAME_DURATION = 0.07f;
-    private static final float ATTACK_ACTIVE_START = 0.14f;
-    private static final float ATTACK_ACTIVE_END = 0.42f;
     private static final float ATTACK_DECELERATION = 3000f;
-    private static final float ATTACK_DAMAGE = 10f;
-    private static final float ATTACK_HITBOX_WIDTH = 44f;
-    private static final float ATTACK_HITBOX_HEIGHT = 22f;
-    private static final float ATTACK_HITBOX_X_OFFSET = -34f;
-    private static final float ATTACK_HITBOX_Y_OFFSET = 50f;
     private static final float HURTBOX_WIDTH = 22f;
     private static final float HURTBOX_HEIGHT = 89f;
     private static final float HURTBOX_X_OFFSET = 53f;
@@ -105,6 +98,7 @@ public class Player {
     private float blockTimeRemaining;
     private float hitFlashTimeRemaining;
     private float health = MAX_HEALTH;
+    private Attack currentAttack;
     private boolean attacking;
     private boolean attackHasHit;
     private boolean guarding;
@@ -279,6 +273,7 @@ public class Player {
             attackTime += frameTime;
             if (attackTime >= attackingAnimation.getAnimationDuration()) {
                 attacking = false;
+                currentAttack = null;
             }
         }
     }
@@ -299,7 +294,7 @@ public class Player {
             movementMode = mode;
             transitionTime = 0f;
         }
-        if (movementDirection != 0f) {
+        if (movementDirection != 0f && !attacking) {
             facingLeft = movementDirection < 0f;
         } else {
             transitionFromAnimation = null;
@@ -472,13 +467,21 @@ public class Player {
         }
     }
 
-    public void attack() {
+    public void punch() {
+        useAttack(Attack.PUNCH);
+    }
+
+    public void useAttack(Attack attack) {
+        if (attack == null) {
+            throw new IllegalArgumentException("Attack cannot be null.");
+        }
         if (dead || guarding || attacking || slideTimeRemaining > 0f) {
             return;
         }
 
         movementDirection = 0f;
         slideTimeRemaining = 0f;
+        currentAttack = attack;
         attacking = true;
         attackTime = 0f;
         attackHasHit = false;
@@ -491,24 +494,16 @@ public class Player {
         }
 
         attackHasHit = true;
-        target.takeDamage(ATTACK_DAMAGE);
+        target.takeDamage(currentAttack.getDamage());
         return true;
     }
 
     public Rectangle getAttackHitbox() {
-        if (!attacking || attackTime < ATTACK_ACTIVE_START || attackTime > ATTACK_ACTIVE_END) {
+        if (!attacking || currentAttack == null || !currentAttack.isActiveAt(attackTime)) {
             return null;
         }
 
-        float hitboxX = facingLeft
-            ? x - ATTACK_HITBOX_WIDTH - ATTACK_HITBOX_X_OFFSET
-            : x + PLAYER_SIZE + ATTACK_HITBOX_X_OFFSET;
-        return new Rectangle(
-            hitboxX,
-            y + ATTACK_HITBOX_Y_OFFSET,
-            ATTACK_HITBOX_WIDTH,
-            ATTACK_HITBOX_HEIGHT
-        );
+        return currentAttack.createHitbox(x, y, PLAYER_SIZE, facingLeft);
     }
 
     public Rectangle getHurtbox() {

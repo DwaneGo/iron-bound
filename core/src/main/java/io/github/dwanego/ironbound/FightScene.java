@@ -17,6 +17,7 @@ import io.github.dwanego.ironbound.player.Player;
 import io.github.dwanego.ironbound.player.PlayerController;
 
 public class FightScene extends ScreenAdapter {
+    private final Main game;
     private SpriteBatch batch;
     private OrthographicCamera camera;
     private ExtendViewport viewport;
@@ -37,6 +38,11 @@ public class FightScene extends ScreenAdapter {
     private static final float CAMERA_HORIZONTAL_PADDING = 160f;
     private static final float CAMERA_VERTICAL_PADDING = 96f;
     private static final float CAMERA_VERTICAL_OFFSET = 136f;
+
+    public FightScene(Main game) {
+        this.game = game;
+    }
+
 
     @Override
     public void show() {
@@ -105,6 +111,19 @@ public class FightScene extends ScreenAdapter {
     public void render(float delta) {
         ScreenUtils.clear(0.53f, 0.81f, 0.92f, 1f);
 
+        if (Gdx.input.isKeyJustPressed(Keys.ESCAPE)) {
+            Gdx.app.log("FightScene", "ESC pressed!");
+            game.setScreen(new MainMenu(game));
+            dispose();
+            return;
+        }
+
+        if (Gdx.input.isKeyJustPressed(Keys.R)) {
+            game.setScreen(new FightScene(game));
+            dispose();
+            return;
+        }
+
         if (Gdx.input.isKeyJustPressed(Keys.H)) {
             showHitboxes = !showHitboxes;
         }
@@ -150,6 +169,7 @@ public class FightScene extends ScreenAdapter {
         if (showHitboxes) {
             renderHitboxes();
         }
+
     }
 
     private void updateCamera(float delta) {

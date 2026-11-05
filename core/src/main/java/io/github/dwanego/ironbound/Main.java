@@ -12,7 +12,7 @@ public class Main extends Game {
     OrthographicCamera camera;
     @Override
     public void create() {
-        setScreen(new FightScene());
+        setScreen(new MainMenu(this));
     }
 
     @Override

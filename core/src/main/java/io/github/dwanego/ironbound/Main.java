@@ -1,15 +1,7 @@
 package io.github.dwanego.ironbound;
 
-import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Game;
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input.Keys;
-import com.badlogic.gdx.InputProcessor;
-import com.badlogic.gdx.audio.Music;
-import com.badlogic.gdx.audio.Sound;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 
@@ -20,7 +12,7 @@ public class Main extends Game {
     OrthographicCamera camera;
     @Override
     public void create() {
-        setScreen(new FirstScreen());
+        setScreen(new FightScene());
     }
 
     @Override

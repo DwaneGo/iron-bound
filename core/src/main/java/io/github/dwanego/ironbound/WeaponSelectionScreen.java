@@ -76,7 +76,7 @@ public class WeaponSelectionScreen extends ScreenAdapter {
 
         font = new BitmapFont();
         testSpriteSheet = new Texture("player-sheet.png");
-        kaiSpriteSheet = new Texture("sprite_sheet_KaiCenat.png");
+        kaiSpriteSheet = new Texture("sprite_sheet_KaiCenat_combat_aligned.png");
         testSpriteSheet.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
         kaiSpriteSheet.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
         testSpriteFrames = TextureRegion.split(testSpriteSheet, 64, 64);

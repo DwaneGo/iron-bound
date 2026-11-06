@@ -13,7 +13,7 @@ public enum Weapon {
         10,
         14,
         10,
-        new Attack("Katana", 24f, 0.70f, 0.92f, 98f, 34f, -52f, 42f)
+        new Attack("Katana", 24f, 0.70f, 0.92f, 118f, 34f, -52f, 42f)
     ),
     FRYING_PAN(
         "FRYING PAN",
@@ -48,7 +48,7 @@ public enum Weapon {
         16,
         10,
         7,
-        new Attack("Eraser", 14f, 0.63f, 0.69f, 244f, 30f, -52f, 42f)
+        new Attack("Eraser", 14f, 0.63f, 0.69f, 38f, 28f, -52f, 42f)
     );
 
     private final String label;

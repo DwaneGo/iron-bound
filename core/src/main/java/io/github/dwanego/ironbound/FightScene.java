@@ -15,6 +15,7 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import io.github.dwanego.ironbound.player.Player;
 import io.github.dwanego.ironbound.player.PlayerController;
+import io.github.dwanego.ironbound.player.Weapon;
 
 public class FightScene extends ScreenAdapter {
     private final Main game;
@@ -28,6 +29,9 @@ public class FightScene extends ScreenAdapter {
     private Player player2;
     private PlayerController player2Controller;
     private boolean showHitboxes;
+    private final boolean kaiWeaponsMode;
+    private final Weapon player1Weapon;
+    private final Weapon player2Weapon;
 
     private static final float HEALTH_BAR_HEIGHT = 20f;
     private static final float HEALTH_BAR_MARGIN = 24f;
@@ -40,7 +44,19 @@ public class FightScene extends ScreenAdapter {
     private static final float CAMERA_VERTICAL_OFFSET = 136f;
 
     public FightScene(Main game) {
+        this(game, false, Weapon.PUNCH, Weapon.PUNCH);
+    }
+
+    public FightScene(
+        Main game,
+        boolean kaiWeaponsMode,
+        Weapon player1Weapon,
+        Weapon player2Weapon
+    ) {
         this.game = game;
+        this.kaiWeaponsMode = kaiWeaponsMode;
+        this.player1Weapon = player1Weapon;
+        this.player2Weapon = player2Weapon;
     }
 
 
@@ -83,7 +99,7 @@ public class FightScene extends ScreenAdapter {
             );
         }
 
-        player = new Player(100f, 100f);
+        player = new Player(100f, 100f, 1f, 2f, false, kaiWeaponsMode, player1Weapon);
         playerController = new PlayerController(
             player,
             GameSettings.getKey(1, GameSettings.Control.LEFT),
@@ -92,7 +108,7 @@ public class FightScene extends ScreenAdapter {
             GameSettings.getKey(1, GameSettings.Control.SLIDE),
             GameSettings.getKey(1, GameSettings.Control.ATTACK)
         );
-        player2 = new Player(600f, 100f, true);
+        player2 = new Player(600f, 100f, 1f, 2f, true, kaiWeaponsMode, player2Weapon);
         player2Controller = new PlayerController(
             player2,
             GameSettings.getKey(2, GameSettings.Control.LEFT),
@@ -124,7 +140,9 @@ public class FightScene extends ScreenAdapter {
         if (Gdx.input.isKeyJustPressed(
             GameSettings.getGlobalKey(GameSettings.Control.RESET)
         )) {
-            game.setScreen(new FightScene(game));
+            game.setScreen(
+                new FightScene(game, kaiWeaponsMode, player1Weapon, player2Weapon)
+            );
             dispose();
             return;
         }

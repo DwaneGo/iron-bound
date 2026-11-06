@@ -7,15 +7,19 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.ScreenUtils;
+import com.badlogic.gdx.utils.Scaling;
 import com.badlogic.gdx.utils.viewport.FitViewport;
+import io.github.dwanego.ironbound.player.Weapon;
 
 public class WeaponSelectionScreen extends ScreenAdapter {
 
@@ -25,6 +29,10 @@ public class WeaponSelectionScreen extends ScreenAdapter {
     private BitmapFont font;
     private Texture buttonTexture;
     private Texture readyTexture;
+    private Texture testSpriteSheet;
+    private Texture kaiSpriteSheet;
+    private TextureRegion[][] testSpriteFrames;
+    private TextureRegion[][] kaiSpriteFrames;
 
     private TextButton.TextButtonStyle normalStyle;
     private TextButton.TextButtonStyle readyStyle;
@@ -33,12 +41,29 @@ public class WeaponSelectionScreen extends ScreenAdapter {
     private boolean player2Ready = false;
     private int player1WeaponIndex;
     private int player2WeaponIndex;
+    private boolean kaiWeaponsMode;
 
     private TextButton startButton;
     private TextButton player1ReadyButton;
     private TextButton player2ReadyButton;
+    private TextButton modeButton;
+    private TextButton player1PreviousButton;
+    private TextButton player1NextButton;
+    private TextButton player2PreviousButton;
+    private TextButton player2NextButton;
+    private Label player1WeaponLabel;
+    private Label player2WeaponLabel;
+    private Image player1Preview;
+    private Image player2Preview;
 
-    private static final String[] WEAPONS = {"placeholder1", "placeholder2"};
+    private static final Weapon[] WEAPONS = {
+        Weapon.KATANA,
+        Weapon.FRYING_PAN,
+        Weapon.SCISSORS,
+        Weapon.ELECTRIC_FAN,
+        Weapon.SLIPPERS,
+        Weapon.ERASER
+    };
 
     public WeaponSelectionScreen(Main game) {
         this.game = game;
@@ -50,6 +75,12 @@ public class WeaponSelectionScreen extends ScreenAdapter {
         Gdx.input.setInputProcessor(stage);
 
         font = new BitmapFont();
+        testSpriteSheet = new Texture("player-sheet.png");
+        kaiSpriteSheet = new Texture("sprite_sheet_KaiCenat.png");
+        testSpriteSheet.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
+        kaiSpriteSheet.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
+        testSpriteFrames = TextureRegion.split(testSpriteSheet, 64, 64);
+        kaiSpriteFrames = TextureRegion.split(kaiSpriteSheet, 224, 112);
 
         buttonTexture = createTexture(
             new Color(0.20f, 0.23f, 0.28f, 1f)
@@ -104,24 +135,31 @@ public class WeaponSelectionScreen extends ScreenAdapter {
             "WEAPON SELECTION",
             new Label.LabelStyle(font, Color.LIGHT_GRAY)
         );
-        subtitle.setFontScale(1.5f);
+        subtitle.setFontScale(1.25f);
 
-        mainTable.add(title).padBottom(20);
+        mainTable.add(title).padBottom(8);
         mainTable.row();
 
-        mainTable.add(subtitle).padBottom(50);
+        mainTable.add(subtitle).padBottom(12);
+        mainTable.row();
+
+        modeButton = new TextButton(getModeButtonText(), normalStyle);
+        mainTable.add(modeButton)
+            .width(340)
+            .height(42)
+            .padBottom(20);
         mainTable.row();
 
         Table playersTable = new Table();
 
         playersTable.add(createPlayerPanel(1))
             .width(300)
-            .padRight(40);
+            .padRight(30);
 
         playersTable.add(createPlayerPanel(2))
             .width(300);
 
-        mainTable.add(playersTable).padBottom(40);
+        mainTable.add(playersTable).padBottom(20);
         mainTable.row();
 
         startButton = new TextButton(
@@ -130,8 +168,8 @@ public class WeaponSelectionScreen extends ScreenAdapter {
 
         mainTable.add(startButton)
             .width(300)
-            .height(60)
-            .padBottom(15);
+            .height(50)
+            .padBottom(10);
 
         mainTable.row();
 
@@ -141,13 +179,31 @@ public class WeaponSelectionScreen extends ScreenAdapter {
 
         mainTable.add(backButton)
             .width(200)
-            .height(50);
+            .height(42);
+
+        modeButton.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                kaiWeaponsMode = !kaiWeaponsMode;
+                player1Ready = false;
+                player2Ready = false;
+                resetReadyButton(player1ReadyButton);
+                resetReadyButton(player2ReadyButton);
+                updateWeaponSelection();
+                updateStartButton();
+            }
+        });
 
         startButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 if (player1Ready && player2Ready) {
-                    game.setScreen(new FightScene(game));
+                    game.setScreen(new FightScene(
+                        game,
+                        kaiWeaponsMode,
+                        kaiWeaponsMode ? getSelectedWeaponType(1) : Weapon.PUNCH,
+                        kaiWeaponsMode ? getSelectedWeaponType(2) : Weapon.PUNCH
+                    ));
                     WeaponSelectionScreen.this.dispose();
                 }
             }
@@ -160,6 +216,8 @@ public class WeaponSelectionScreen extends ScreenAdapter {
                 WeaponSelectionScreen.this.dispose();
             }
         });
+
+        updateWeaponSelection();
     }
 
     private Table createPlayerPanel(int playerNumber) {
@@ -174,9 +232,19 @@ public class WeaponSelectionScreen extends ScreenAdapter {
             new Label.LabelStyle(font, playerColor)
         );
 
-        playerTitle.setFontScale(1.8f);
+        playerTitle.setFontScale(1.5f);
 
-        table.add(playerTitle).padBottom(35);
+        table.add(playerTitle).padBottom(8);
+        table.row();
+
+        Image preview = new Image(getPreviewRegion(playerNumber));
+        preview.setScaling(Scaling.fit);
+        if (playerNumber == 1) {
+            player1Preview = preview;
+        } else {
+            player2Preview = preview;
+        }
+        table.add(preview).width(230).height(105).padBottom(8);
         table.row();
 
         Table weaponPicker = new Table();
@@ -186,11 +254,20 @@ public class WeaponSelectionScreen extends ScreenAdapter {
             getSelectedWeapon(playerNumber),
             new Label.LabelStyle(font, Color.LIGHT_GRAY)
         );
+        if (playerNumber == 1) {
+            player1PreviousButton = previousWeaponButton;
+            player1NextButton = nextWeaponButton;
+            player1WeaponLabel = weaponLabel;
+        } else {
+            player2PreviousButton = previousWeaponButton;
+            player2NextButton = nextWeaponButton;
+            player2WeaponLabel = weaponLabel;
+        }
 
-        weaponPicker.add(previousWeaponButton).width(50).height(50);
-        weaponPicker.add(weaponLabel).width(170).height(50);
-        weaponPicker.add(nextWeaponButton).width(50).height(50);
-        table.add(weaponPicker).padBottom(20);
+        weaponPicker.add(previousWeaponButton).width(42).height(42);
+        weaponPicker.add(weaponLabel).width(190).height(42);
+        weaponPicker.add(nextWeaponButton).width(42).height(42);
+        table.add(weaponPicker).padBottom(10);
 
         table.row();
 
@@ -204,8 +281,8 @@ public class WeaponSelectionScreen extends ScreenAdapter {
         }
 
         table.add(readyButton)
-            .width(260)
-            .height(60);
+            .width(250)
+            .height(50);
 
         readyButton.addListener(new ClickListener() {
             @Override
@@ -243,10 +320,13 @@ public class WeaponSelectionScreen extends ScreenAdapter {
 
     private String getSelectedWeapon(int playerNumber) {
         int weaponIndex = playerNumber == 1 ? player1WeaponIndex : player2WeaponIndex;
-        return WEAPONS[weaponIndex];
+        return kaiWeaponsMode ? WEAPONS[weaponIndex].getLabel() : Weapon.PUNCH.getLabel();
     }
 
     private void cycleWeapon(int playerNumber, int direction, Label weaponLabel) {
+        if (!kaiWeaponsMode) {
+            return;
+        }
         if (playerNumber == 1) {
             player1WeaponIndex = (player1WeaponIndex + direction + WEAPONS.length)
                 % WEAPONS.length;
@@ -264,7 +344,44 @@ public class WeaponSelectionScreen extends ScreenAdapter {
         }
 
         weaponLabel.setText(getSelectedWeapon(playerNumber));
+        updatePreview(playerNumber);
         updateStartButton();
+    }
+
+    private TextureRegion getPreviewRegion(int playerNumber) {
+        if (!kaiWeaponsMode) {
+            return testSpriteFrames[0][0];
+        }
+        Weapon weapon = getSelectedWeaponType(playerNumber);
+        return kaiSpriteFrames[weapon.getAnimationRow()][weapon.getPreviewFrame()];
+    }
+
+    private Weapon getSelectedWeaponType(int playerNumber) {
+        int weaponIndex = playerNumber == 1 ? player1WeaponIndex : player2WeaponIndex;
+        return WEAPONS[weaponIndex];
+    }
+
+    private void updatePreview(int playerNumber) {
+        Image preview = playerNumber == 1 ? player1Preview : player2Preview;
+        preview.setDrawable(new TextureRegionDrawable(getPreviewRegion(playerNumber)));
+    }
+
+    private String getModeButtonText() {
+        return kaiWeaponsMode
+            ? "MODE: KAI CENAT WEAPONS"
+            : "MODE: TEST (CURRENT SPRITE SHEET)";
+    }
+
+    private void updateWeaponSelection() {
+        modeButton.setText(getModeButtonText());
+        player1WeaponLabel.setText(getSelectedWeapon(1));
+        player2WeaponLabel.setText(getSelectedWeapon(2));
+        player1PreviousButton.setDisabled(!kaiWeaponsMode);
+        player1NextButton.setDisabled(!kaiWeaponsMode);
+        player2PreviousButton.setDisabled(!kaiWeaponsMode);
+        player2NextButton.setDisabled(!kaiWeaponsMode);
+        updatePreview(1);
+        updatePreview(2);
     }
 
     private void resetReadyButton(TextButton readyButton) {
@@ -301,6 +418,8 @@ public class WeaponSelectionScreen extends ScreenAdapter {
         stage.dispose();
         buttonTexture.dispose();
         readyTexture.dispose();
+        testSpriteSheet.dispose();
+        kaiSpriteSheet.dispose();
         font.dispose();
     }
 }

@@ -17,6 +17,7 @@ public class Player {
     private static final float PLAYER_SIZE = 128f;
     private static final int KAI_FRAME_WIDTH = 224;
     private static final int KAI_FRAME_HEIGHT = 112;
+    private static final float KAI_GROUND_BOTTOM_MARGIN = 8f;
     private static final int KAI_STANDING_ROW_INDEX = 9;
     private static final int KAI_STANDING_COLUMN_INDEX = 4;
     private static final int KAI_WALKING_ROW_INDEX = 3;
@@ -24,6 +25,7 @@ public class Player {
     private static final int KAI_SLIDING_ROW_INDEX = 6;
     private static final int KAI_JUMPING_ROW_INDEX = 7;
     private static final int KAI_PUNCH_ROW_INDEX = 2;
+    private static final int KAI_DOUBLE_JUMP_ROW_INDEX = 8;
     private static final int KAI_DYING_ROW_INDEX = 8;
     private static final int KAI_DYING_FRAME_COUNT = 6;
     private static final float[] KAI_DYING_FRAME_BOTTOM_Y = {
@@ -68,6 +70,7 @@ public class Player {
     private static final int RUNNING_SHEET_ROW = 5;
     private static final int SLIDING_SHEET_ROW = 7;
     private static final int JUMPING_SHEET_ROW = 8;
+    private static final int DOUBLE_JUMPING_SHEET_ROW = 9;
     private static final int IDLE_SHEET_ROW = 1;
     private static final int ATTACKING_SHEET_ROW = 3;
     private static final int DYING_SHEET_ROW = 11;
@@ -79,6 +82,8 @@ public class Player {
 
     private boolean grounded = true;
     private boolean jumpRequested = false;
+    private boolean doubleJumping;
+    private int jumpsUsed;
 
 
     private float accumulator = 0f;
@@ -113,6 +118,7 @@ public class Player {
     private final Animation<TextureRegion> sprintingAnimation;
     private final Animation<TextureRegion> slidingAnimation;
     private final Animation<TextureRegion> jumpingAnimation;
+    private final Animation<TextureRegion> doubleJumpingAnimation;
     private final Animation<TextureRegion> attackingAnimation;
     private final Animation<TextureRegion> kaiWeaponAnimation;
     private final Animation<TextureRegion> dyingAnimation;
@@ -242,6 +248,11 @@ public class Player {
                 8,
                 0.08f
             );
+            doubleJumpingAnimation = createAnimation(
+                frames[KAI_DOUBLE_JUMP_ROW_INDEX],
+                9,
+                0.1f
+            );
             attackingAnimation = createAnimation(
                 frames[KAI_PUNCH_ROW_INDEX],
                 7,
@@ -269,6 +280,11 @@ public class Player {
                 SLIDE_FRAME_DURATION
             );
             jumpingAnimation = createAnimation(frames[JUMPING_SHEET_ROW - 1], 8, 0.08f);
+            doubleJumpingAnimation = createAnimation(
+                frames[DOUBLE_JUMPING_SHEET_ROW - 1],
+                frames[DOUBLE_JUMPING_SHEET_ROW - 1].length,
+                0.08f
+            );
             attackingAnimation = createAnimation(
                 frames[ATTACKING_SHEET_ROW - 1],
                 ACTION_FRAME_COUNT,
@@ -282,6 +298,7 @@ public class Player {
             );
         }
         attackingAnimation.setPlayMode(Animation.PlayMode.NORMAL);
+        doubleJumpingAnimation.setPlayMode(Animation.PlayMode.NORMAL);
         dyingAnimation.setPlayMode(Animation.PlayMode.NORMAL);
         if (kaiWeaponAnimation != null) {
             kaiWeaponAnimation.setPlayMode(Animation.PlayMode.NORMAL);
@@ -331,10 +348,16 @@ public class Player {
             previousX = x;
             previousY = y;
 
-            if (jumpRequested && grounded) {
+            if (jumpRequested && jumpsUsed < 2) {
                 velocityY = JUMP_SPEED;
                 grounded = false;
-                jumpingAnimationTime = 0f;
+                jumpsUsed++;
+                if (jumpsUsed == 1) {
+                    jumpingAnimationTime = 0f;
+                } else {
+                    doubleJumping = true;
+                    jumpingAnimationTime = 0f;
+                }
             }
 
             jumpRequested = false;
@@ -378,6 +401,8 @@ public class Player {
                 y = GROUND_Y;
                 velocityY = 0f;
                 grounded = true;
+                jumpsUsed = 0;
+                doubleJumping = false;
             }
             slideTimeRemaining = Math.max(0f, slideTimeRemaining - TIME_STEP);
             accumulator -= TIME_STEP;
@@ -491,7 +516,9 @@ public class Player {
         }
 
         TextureRegion frame = !grounded
-            ? jumpingAnimation.getKeyFrame(jumpingAnimationTime, false)
+            ? doubleJumping
+                ? doubleJumpingAnimation.getKeyFrame(jumpingAnimationTime, false)
+                : jumpingAnimation.getKeyFrame(jumpingAnimationTime, false)
             : slideTimeRemaining > 0f
                 ? getSlidingFrame()
                 : movementDirection != 0f
@@ -588,7 +615,8 @@ public class Player {
             float height = KAI_FRAME_HEIGHT * KAI_FRAME_SCALE;
             float bodyCenter = facingLeft ? KAI_FRAME_WIDTH - 80f : 80f;
             float drawX = x + PLAYER_SIZE / 2f - bodyCenter * KAI_FRAME_SCALE;
-            float drawY = y - height * 0.42f + kaiVerticalAdjustment;
+            float drawY = y - KAI_GROUND_BOTTOM_MARGIN * KAI_FRAME_SCALE
+                + kaiVerticalAdjustment;
             if (facingLeft) {
                 batch.draw(frame, drawX + width, drawY, -width, height);
             } else {
@@ -605,8 +633,7 @@ public class Player {
 
     private float getKaiDeathFloorAdjustment(int frameIndex) {
         float bottomMargin = KAI_FRAME_HEIGHT - KAI_DYING_FRAME_BOTTOM_Y[frameIndex];
-        return KAI_FRAME_HEIGHT * KAI_FRAME_SCALE * 0.42f
-            - bottomMargin * KAI_FRAME_SCALE;
+        return (KAI_GROUND_BOTTOM_MARGIN - bottomMargin) * KAI_FRAME_SCALE;
     }
 
     private Animation<TextureRegion> getMovementAnimation() {
@@ -636,7 +663,7 @@ public class Player {
     }
 
     public void jump() {
-        if (!dead && !attacking && grounded) {
+        if (!dead && !attacking && jumpsUsed < 2) {
             jumpRequested = true;
         }
     }

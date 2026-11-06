@@ -13,6 +13,7 @@ public class Main extends Game {
     @Override
     public void create() {
         setScreen(new MainMenu(this));
+        GameSettings.applySavedDisplayMode();
     }
 
     @Override

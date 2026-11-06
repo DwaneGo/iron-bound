@@ -2,6 +2,8 @@
 package io.github.dwanego.ironbound;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input.Keys;
+import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
@@ -179,27 +181,54 @@ public class MainMenu extends ScreenAdapter {
 
         title.setFontScale(1.5f);
 
-        Label message = new Label(
-            "Coming Soon",
-            new Label.LabelStyle(font, Color.WHITE)
+        TextButton displayModeButton = new TextButton(
+            Gdx.graphics.isFullscreen() ? "DISPLAY: FULLSCREEN" : "DISPLAY: WINDOWED",
+            buttonStyle
         );
+
+        Label controlsHint = new Label(
+            "Click a key to rebind it. Press ESC to cancel.",
+            new Label.LabelStyle(font, Color.LIGHT_GRAY)
+        );
+
+        Table controlsTable = new Table();
+        controlsTable.add(createControlsColumn(1)).width(300).padRight(30);
+        controlsTable.add(createControlsColumn(2)).width(300);
 
         TextButton backButton =
             new TextButton("BACK", buttonStyle);
 
         table.add(title)
-            .padBottom(40);
+            .padBottom(15);
 
         table.row();
 
-        table.add(message)
-            .padBottom(40);
+        table.add(displayModeButton)
+            .width(300)
+            .height(50)
+            .padBottom(10);
 
+        table.row();
+
+        table.add(controlsHint).padBottom(8);
+        table.row();
+
+        table.add(controlsTable).padBottom(10);
         table.row();
 
         table.add(backButton)
             .width(250)
-            .height(60);
+            .height(50);
+
+        displayModeButton.addListener(new ClickListener() {
+            @Override
+            public void clicked(
+                InputEvent event, float x, float y
+            ) {
+                GameSettings.setFullscreen(!Gdx.graphics.isFullscreen());
+                showOptions();
+            }
+        });
 
         backButton.addListener(new ClickListener() {
             @Override
@@ -209,6 +238,53 @@ public class MainMenu extends ScreenAdapter {
                 showMainMenu();
             }
         });
+    }
+
+    private Table createControlsColumn(int playerNumber) {
+        Table column = new Table();
+        Color playerColor = playerNumber == 1 ? Color.GOLD : Color.CYAN;
+        Label playerTitle = new Label(
+            "PLAYER " + playerNumber,
+            new Label.LabelStyle(font, playerColor)
+        );
+        column.add(playerTitle).colspan(2).padBottom(10);
+        column.row();
+
+        for (GameSettings.Control control : GameSettings.Control.values()) {
+            Label controlLabel = new Label(
+                control.getLabel(),
+                new Label.LabelStyle(font, Color.WHITE)
+            );
+            TextButton keyButton = new TextButton(
+                GameSettings.getKeyName(playerNumber, control),
+                buttonStyle
+            );
+            column.add(controlLabel).left().width(115).height(42);
+            column.add(keyButton).width(125).height(38).padBottom(4);
+            column.row();
+
+            keyButton.addListener(new ClickListener() {
+                @Override
+                public void clicked(
+                    InputEvent event, float x, float y
+                ) {
+                    keyButton.setText("PRESS KEY");
+                    Gdx.input.setInputProcessor(new InputAdapter() {
+                        @Override
+                        public boolean keyDown(int keycode) {
+                            if (keycode != Keys.ESCAPE) {
+                                GameSettings.setKey(playerNumber, control, keycode);
+                            }
+                            Gdx.input.setInputProcessor(stage);
+                            showOptions();
+                            return true;
+                        }
+                    });
+                }
+            });
+        }
+
+        return column;
     }
 
 

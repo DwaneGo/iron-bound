@@ -31,8 +31,14 @@ public class WeaponSelectionScreen extends ScreenAdapter {
 
     private boolean player1Ready = false;
     private boolean player2Ready = false;
+    private int player1WeaponIndex;
+    private int player2WeaponIndex;
 
     private TextButton startButton;
+    private TextButton player1ReadyButton;
+    private TextButton player2ReadyButton;
+
+    private static final String[] WEAPONS = {"placeholder1", "placeholder2"};
 
     public WeaponSelectionScreen(Main game) {
         this.game = game;
@@ -173,20 +179,29 @@ public class WeaponSelectionScreen extends ScreenAdapter {
         table.add(playerTitle).padBottom(35);
         table.row();
 
-        Label placeholder = new Label(
-            "WEAPONS COMING SOON",
+        Table weaponPicker = new Table();
+        TextButton previousWeaponButton = new TextButton("<", normalStyle);
+        TextButton nextWeaponButton = new TextButton(">", normalStyle);
+        Label weaponLabel = new Label(
+            getSelectedWeapon(playerNumber),
             new Label.LabelStyle(font, Color.LIGHT_GRAY)
         );
 
-        table.add(placeholder)
-            .height(120)
-            .padBottom(20);
+        weaponPicker.add(previousWeaponButton).width(50).height(50);
+        weaponPicker.add(weaponLabel).width(170).height(50);
+        weaponPicker.add(nextWeaponButton).width(50).height(50);
+        table.add(weaponPicker).padBottom(20);
 
         table.row();
 
         TextButton readyButton = new TextButton(
             "READY", normalStyle
         );
+        if (playerNumber == 1) {
+            player1ReadyButton = readyButton;
+        } else {
+            player2ReadyButton = readyButton;
+        }
 
         table.add(readyButton)
             .width(260)
@@ -198,38 +213,73 @@ public class WeaponSelectionScreen extends ScreenAdapter {
 
                 if (playerNumber == 1) {
                     player1Ready = !player1Ready;
-
-                    readyButton.setStyle(
-                        player1Ready ? readyStyle : normalStyle
-                    );
-
-                    readyButton.setText(
-                        player1Ready ? "READY!" : "READY"
-                    );
-
                 } else {
                     player2Ready = !player2Ready;
-
-                    readyButton.setStyle(
-                        player2Ready ? readyStyle : normalStyle
-                    );
-
-                    readyButton.setText(
-                        player2Ready ? "READY!" : "READY"
-                    );
                 }
 
-                if (player1Ready && player2Ready) {
-                    startButton.setText("START FIGHT");
-                    startButton.setStyle(readyStyle);
-                } else {
-                    startButton.setText("WAITING FOR PLAYERS");
-                    startButton.setStyle(normalStyle);
-                }
+                boolean ready = playerNumber == 1 ? player1Ready : player2Ready;
+                readyButton.setStyle(ready ? readyStyle : normalStyle);
+                readyButton.setText(ready ? "READY!" : "READY");
+                updateStartButton();
+            }
+        });
+
+        previousWeaponButton.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                cycleWeapon(playerNumber, -1, weaponLabel);
+            }
+        });
+
+        nextWeaponButton.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                cycleWeapon(playerNumber, 1, weaponLabel);
             }
         });
 
         return table;
+    }
+
+    private String getSelectedWeapon(int playerNumber) {
+        int weaponIndex = playerNumber == 1 ? player1WeaponIndex : player2WeaponIndex;
+        return WEAPONS[weaponIndex];
+    }
+
+    private void cycleWeapon(int playerNumber, int direction, Label weaponLabel) {
+        if (playerNumber == 1) {
+            player1WeaponIndex = (player1WeaponIndex + direction + WEAPONS.length)
+                % WEAPONS.length;
+            if (player1Ready) {
+                player1Ready = false;
+                resetReadyButton(player1ReadyButton);
+            }
+        } else {
+            player2WeaponIndex = (player2WeaponIndex + direction + WEAPONS.length)
+                % WEAPONS.length;
+            if (player2Ready) {
+                player2Ready = false;
+                resetReadyButton(player2ReadyButton);
+            }
+        }
+
+        weaponLabel.setText(getSelectedWeapon(playerNumber));
+        updateStartButton();
+    }
+
+    private void resetReadyButton(TextButton readyButton) {
+        readyButton.setStyle(normalStyle);
+        readyButton.setText("READY");
+    }
+
+    private void updateStartButton() {
+        if (player1Ready && player2Ready) {
+            startButton.setText("START FIGHT");
+            startButton.setStyle(readyStyle);
+        } else {
+            startButton.setText("WAITING FOR PLAYERS");
+            startButton.setStyle(normalStyle);
+        }
     }
 
     @Override

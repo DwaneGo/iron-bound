@@ -1,8 +1,8 @@
 
 package io.github.dwanego.ironbound;
 
-import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -85,20 +85,20 @@ public class FightScene extends ScreenAdapter {
         player = new Player(100f, 100f);
         playerController = new PlayerController(
             player,
-            Keys.A,
-            Keys.D,
-            Keys.W,
-            Keys.S,
-            Keys.Y
+            GameSettings.getKey(1, GameSettings.Control.LEFT),
+            GameSettings.getKey(1, GameSettings.Control.RIGHT),
+            GameSettings.getKey(1, GameSettings.Control.JUMP),
+            GameSettings.getKey(1, GameSettings.Control.SLIDE),
+            GameSettings.getKey(1, GameSettings.Control.ATTACK)
         );
         player2 = new Player(600f, 100f, true);
         player2Controller = new PlayerController(
             player2,
-            Keys.LEFT,
-            Keys.RIGHT,
-            Keys.UP,
-            Keys.DOWN,
-            Keys.NUMPAD_3
+            GameSettings.getKey(2, GameSettings.Control.LEFT),
+            GameSettings.getKey(2, GameSettings.Control.RIGHT),
+            GameSettings.getKey(2, GameSettings.Control.JUMP),
+            GameSettings.getKey(2, GameSettings.Control.SLIDE),
+            GameSettings.getKey(2, GameSettings.Control.ATTACK)
         );
     }
 

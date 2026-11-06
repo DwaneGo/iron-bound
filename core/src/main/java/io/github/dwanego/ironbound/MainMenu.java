@@ -195,6 +195,12 @@ public class MainMenu extends ScreenAdapter {
         controlsTable.add(createControlsColumn(1)).width(300).padRight(30);
         controlsTable.add(createControlsColumn(2)).width(300);
 
+        Table globalControls = createGlobalControls();
+        TextButton hitboxesButton = new TextButton(
+            getHitboxesButtonText(),
+            buttonStyle
+        );
+
         TextButton backButton =
             new TextButton("BACK", buttonStyle);
 
@@ -216,6 +222,15 @@ public class MainMenu extends ScreenAdapter {
         table.add(controlsTable).padBottom(10);
         table.row();
 
+        table.add(globalControls).padBottom(8);
+        table.row();
+
+        table.add(hitboxesButton)
+            .width(300)
+            .height(42)
+            .padBottom(8);
+        table.row();
+
         table.add(backButton)
             .width(250)
             .height(50);
@@ -227,6 +242,18 @@ public class MainMenu extends ScreenAdapter {
             ) {
                 GameSettings.setFullscreen(!Gdx.graphics.isFullscreen());
                 showOptions();
+            }
+        });
+
+        hitboxesButton.addListener(new ClickListener() {
+            @Override
+            public void clicked(
+                InputEvent event, float x, float y
+            ) {
+                GameSettings.setHitboxesEnabled(
+                    !GameSettings.isHitboxesEnabled()
+                );
+                hitboxesButton.setText(getHitboxesButtonText());
             }
         });
 
@@ -250,7 +277,13 @@ public class MainMenu extends ScreenAdapter {
         column.add(playerTitle).colspan(2).padBottom(10);
         column.row();
 
-        for (GameSettings.Control control : GameSettings.Control.values()) {
+        for (GameSettings.Control control : new GameSettings.Control[] {
+            GameSettings.Control.LEFT,
+            GameSettings.Control.RIGHT,
+            GameSettings.Control.JUMP,
+            GameSettings.Control.SLIDE,
+            GameSettings.Control.ATTACK
+        }) {
             Label controlLabel = new Label(
                 control.getLabel(),
                 new Label.LabelStyle(font, Color.WHITE)
@@ -285,6 +318,59 @@ public class MainMenu extends ScreenAdapter {
         }
 
         return column;
+    }
+
+    private Table createGlobalControls() {
+        Table controls = new Table();
+        Label title = new Label(
+            "GAME CONTROLS",
+            new Label.LabelStyle(font, Color.GOLD)
+        );
+        controls.add(title).colspan(4).padBottom(5);
+        controls.row();
+
+        for (GameSettings.Control control : new GameSettings.Control[] {
+            GameSettings.Control.RESET, GameSettings.Control.MENU
+        }) {
+            Label controlLabel = new Label(
+                control.getLabel(),
+                new Label.LabelStyle(font, Color.WHITE)
+            );
+            TextButton keyButton = new TextButton(
+                GameSettings.getKeyName(control),
+                buttonStyle
+            );
+            controls.add(controlLabel).width(90).height(36).padLeft(8);
+            controls.add(keyButton).width(115).height(34).padRight(18);
+
+            keyButton.addListener(new ClickListener() {
+                @Override
+                public void clicked(
+                    InputEvent event, float x, float y
+                ) {
+                    keyButton.setText("PRESS KEY");
+                    Gdx.input.setInputProcessor(new InputAdapter() {
+                        @Override
+                        public boolean keyDown(int keycode) {
+                            if (keycode != Keys.ESCAPE
+                                || control == GameSettings.Control.MENU) {
+                                GameSettings.setGlobalKey(control, keycode);
+                            }
+                            Gdx.input.setInputProcessor(stage);
+                            showOptions();
+                            return true;
+                        }
+                    });
+                }
+            });
+        }
+
+        return controls;
+    }
+
+    private String getHitboxesButtonText() {
+        return "SHOW HITBOXES: "
+            + (GameSettings.isHitboxesEnabled() ? "ON" : "OFF");
     }
 
 

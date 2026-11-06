@@ -11,7 +11,9 @@ public final class GameSettings {
         RIGHT("RIGHT"),
         JUMP("JUMP"),
         SLIDE("SLIDE"),
-        ATTACK("ATTACK");
+        ATTACK("ATTACK"),
+        RESET("RESET"),
+        MENU("MENU");
 
         private final String label;
 
@@ -41,6 +43,28 @@ public final class GameSettings {
             getControlPreferenceKey(playerNumber, control),
             keycode
         ).flush();
+    }
+
+    public static int getGlobalKey(Control control) {
+        return preferences().getInteger(
+            getGlobalControlPreferenceKey(control),
+            control == Control.RESET ? Keys.R : Keys.ESCAPE
+        );
+    }
+
+    public static void setGlobalKey(Control control, int keycode) {
+        preferences().putInteger(
+            getGlobalControlPreferenceKey(control),
+            keycode
+        ).flush();
+    }
+
+    public static boolean isHitboxesEnabled() {
+        return preferences().getBoolean("showHitboxes", true);
+    }
+
+    public static void setHitboxesEnabled(boolean enabled) {
+        preferences().putBoolean("showHitboxes", enabled).flush();
     }
 
     public static boolean isFullscreen() {
@@ -79,6 +103,10 @@ public final class GameSettings {
         return Keys.toString(getKey(playerNumber, control));
     }
 
+    public static String getKeyName(Control control) {
+        return Keys.toString(getGlobalKey(control));
+    }
+
     private static Preferences preferences() {
         return Gdx.app.getPreferences(PREFERENCES_NAME);
     }
@@ -89,6 +117,13 @@ public final class GameSettings {
         }
         return "player" + playerNumber + "."
             + control.name().toLowerCase(Locale.ROOT);
+    }
+
+    private static String getGlobalControlPreferenceKey(Control control) {
+        if (control != Control.RESET && control != Control.MENU) {
+            throw new IllegalArgumentException("Control is not global: " + control);
+        }
+        return "global." + control.name().toLowerCase(Locale.ROOT);
     }
 
     private static int getDefaultKey(int playerNumber, Control control) {

@@ -27,7 +27,7 @@ public class FightScene extends ScreenAdapter {
     private PlayerController playerController;
     private Player player2;
     private PlayerController player2Controller;
-    private boolean showHitboxes = true;
+    private boolean showHitboxes;
 
     private static final float HEALTH_BAR_HEIGHT = 20f;
     private static final float HEALTH_BAR_MARGIN = 24f;
@@ -46,6 +46,7 @@ public class FightScene extends ScreenAdapter {
 
     @Override
     public void show() {
+        showHitboxes = GameSettings.isHitboxesEnabled();
         camera = new OrthographicCamera();
         viewport = new ExtendViewport(800, 600, camera);
 
@@ -111,14 +112,18 @@ public class FightScene extends ScreenAdapter {
     public void render(float delta) {
         ScreenUtils.clear(0.53f, 0.81f, 0.92f, 1f);
 
-        if (Gdx.input.isKeyJustPressed(Keys.ESCAPE)) {
-            Gdx.app.log("FightScene", "ESC pressed!");
+        if (Gdx.input.isKeyJustPressed(
+            GameSettings.getGlobalKey(GameSettings.Control.MENU)
+        )) {
+            Gdx.app.log("FightScene", "Menu key pressed.");
             game.setScreen(new MainMenu(game));
             dispose();
             return;
         }
 
-        if (Gdx.input.isKeyJustPressed(Keys.R)) {
+        if (Gdx.input.isKeyJustPressed(
+            GameSettings.getGlobalKey(GameSettings.Control.RESET)
+        )) {
             game.setScreen(new FightScene(game));
             dispose();
             return;
@@ -126,6 +131,7 @@ public class FightScene extends ScreenAdapter {
 
         if (Gdx.input.isKeyJustPressed(Keys.H)) {
             showHitboxes = !showHitboxes;
+            GameSettings.setHitboxesEnabled(showHitboxes);
         }
 
         playerController.update();

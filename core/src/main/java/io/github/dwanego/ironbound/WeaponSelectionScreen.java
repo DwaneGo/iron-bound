@@ -30,6 +30,7 @@ public class WeaponSelectionScreen extends ScreenAdapter {
     private BitmapFont font;
     private Texture buttonTexture;
     private Texture readyTexture;
+    private Texture menuBackgroundTexture;
     private Texture testSpriteSheet;
     private Texture kaiSpriteSheet;
     private TextureRegion[][] testSpriteFrames;
@@ -76,6 +77,11 @@ public class WeaponSelectionScreen extends ScreenAdapter {
         Gdx.input.setInputProcessor(stage);
 
         font = new BitmapFont();
+        menuBackgroundTexture = new Texture("win7.png");
+        menuBackgroundTexture.setFilter(
+            Texture.TextureFilter.Linear,
+            Texture.TextureFilter.Linear
+        );
         testSpriteSheet = new Texture("player-sheet.png");
         kaiSpriteSheet = new Texture("sprite_sheet_KaiCenat_combat_aligned.png");
         testSpriteSheet.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
@@ -120,6 +126,10 @@ public class WeaponSelectionScreen extends ScreenAdapter {
 
     private void createUI() {
         stage.clear();
+        Image background = new Image(menuBackgroundTexture);
+        background.setFillParent(true);
+        stage.addActor(background);
+        background.toBack();
 
         Table mainTable = new Table();
         mainTable.setFillParent(true);
@@ -420,6 +430,7 @@ public class WeaponSelectionScreen extends ScreenAdapter {
         stage.dispose();
         buttonTexture.dispose();
         readyTexture.dispose();
+        menuBackgroundTexture.dispose();
         testSpriteSheet.dispose();
         kaiSpriteSheet.dispose();
         font.dispose();

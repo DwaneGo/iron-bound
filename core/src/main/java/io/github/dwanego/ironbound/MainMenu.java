@@ -11,13 +11,15 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
+import com.badlogic.gdx.utils.Scaling;
 import com.badlogic.gdx.utils.ScreenUtils;
-import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.ExtendViewport;
 
 public class MainMenu extends ScreenAdapter {
 
@@ -26,6 +28,8 @@ public class MainMenu extends ScreenAdapter {
     private Stage stage;
     private BitmapFont font;
     private Texture buttonTexture;
+    private Texture logoTexture;
+    private Texture menuBackgroundTexture;
 
     private TextButton.TextButtonStyle buttonStyle;
 
@@ -36,12 +40,18 @@ public class MainMenu extends ScreenAdapter {
     @Override
     public void show() {
 
-        stage = new Stage(new FitViewport(800, 600));
+        stage = new Stage(new ExtendViewport(800, 600));
         Gdx.input.setInputProcessor(stage);
 
         // Font
         font = new BitmapFont();
         font.getData().setScale(2f);
+        logoTexture = new Texture("logo.png");
+        menuBackgroundTexture = new Texture("win7.png");
+        menuBackgroundTexture.setFilter(
+            Texture.TextureFilter.Linear,
+            Texture.TextureFilter.Linear
+        );
 
         // Button background
         Pixmap pixmap = new Pixmap(
@@ -78,6 +88,7 @@ public class MainMenu extends ScreenAdapter {
     private void showMainMenu() {
 
         stage.clear();
+        addMenuBackground();
 
         // Main container
         Table table = new Table();
@@ -88,19 +99,12 @@ public class MainMenu extends ScreenAdapter {
 
         stage.addActor(table);
 
-        // Game title / Logo
-        Label.LabelStyle titleStyle =
-            new Label.LabelStyle(font, Color.GOLD);
-
-        Label title = new Label(
-            "IRON BOUND", titleStyle
-        );
-
-        title.setFontScale(1.8f);
-
-        // Logo above the menu
-        table.add(title)
-            .padBottom(60)
+        Image logo = new Image(logoTexture);
+        logo.setScaling(Scaling.fit);
+        table.add(logo)
+            .width(220)
+            .height(220)
+            .padBottom(24)
             .center();
 
         table.row();
@@ -167,6 +171,7 @@ public class MainMenu extends ScreenAdapter {
     private void showOptions() {
 
         stage.clear();
+        addMenuBackground();
 
         Table table = new Table();
         table.setFillParent(true);
@@ -373,10 +378,19 @@ public class MainMenu extends ScreenAdapter {
             + (GameSettings.isHitboxesEnabled() ? "ON" : "OFF");
     }
 
+    private void addMenuBackground() {
+        Image background = new Image(menuBackgroundTexture);
+        background.setFillParent(true);
+        background.setScaling(Scaling.fill);
+        stage.addActor(background);
+        background.toBack();
+    }
+
 
     private void showCredits() {
 
         stage.clear();
+        addMenuBackground();
 
         Table table = new Table();
         table.setFillParent(true);
@@ -464,6 +478,8 @@ public class MainMenu extends ScreenAdapter {
 
         stage.dispose();
         buttonTexture.dispose();
+        logoTexture.dispose();
+        menuBackgroundTexture.dispose();
         font.dispose();
     }
 }

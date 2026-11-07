@@ -6,6 +6,7 @@ import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -15,10 +16,12 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import io.github.dwanego.ironbound.player.Player;
 import io.github.dwanego.ironbound.player.PlayerController;
+import io.github.dwanego.ironbound.player.Weapon;
 
 public class FightScene extends ScreenAdapter {
     private final Main game;
     private SpriteBatch batch;
+    private Texture backgroundTexture;
     private OrthographicCamera camera;
     private ExtendViewport viewport;
     private ShapeRenderer shapeRenderer;
@@ -28,6 +31,9 @@ public class FightScene extends ScreenAdapter {
     private Player player2;
     private PlayerController player2Controller;
     private boolean showHitboxes;
+    private final boolean kaiWeaponsMode;
+    private final Weapon player1Weapon;
+    private final Weapon player2Weapon;
 
     private static final float HEALTH_BAR_HEIGHT = 20f;
     private static final float HEALTH_BAR_MARGIN = 24f;
@@ -40,7 +46,19 @@ public class FightScene extends ScreenAdapter {
     private static final float CAMERA_VERTICAL_OFFSET = 136f;
 
     public FightScene(Main game) {
+        this(game, false, Weapon.PUNCH, Weapon.PUNCH);
+    }
+
+    public FightScene(
+        Main game,
+        boolean kaiWeaponsMode,
+        Weapon player1Weapon,
+        Weapon player2Weapon
+    ) {
         this.game = game;
+        this.kaiWeaponsMode = kaiWeaponsMode;
+        this.player1Weapon = player1Weapon;
+        this.player2Weapon = player2Weapon;
     }
 
 
@@ -51,6 +69,11 @@ public class FightScene extends ScreenAdapter {
         viewport = new ExtendViewport(800, 600, camera);
 
         batch = new SpriteBatch();
+        backgroundTexture = new Texture("background.png");
+        backgroundTexture.setFilter(
+            Texture.TextureFilter.Linear,
+            Texture.TextureFilter.Linear
+        );
         shapeRenderer = new ShapeRenderer();
         hitFlashShader = new ShaderProgram(
             "attribute vec4 a_position;\n"
@@ -83,7 +106,7 @@ public class FightScene extends ScreenAdapter {
             );
         }
 
-        player = new Player(100f, 100f);
+        player = new Player(100f, 100f, 1f, 2f, false, kaiWeaponsMode, player1Weapon);
         playerController = new PlayerController(
             player,
             GameSettings.getKey(1, GameSettings.Control.LEFT),
@@ -92,7 +115,7 @@ public class FightScene extends ScreenAdapter {
             GameSettings.getKey(1, GameSettings.Control.SLIDE),
             GameSettings.getKey(1, GameSettings.Control.ATTACK)
         );
-        player2 = new Player(600f, 100f, true);
+        player2 = new Player(600f, 100f, 1f, 2f, true, kaiWeaponsMode, player2Weapon);
         player2Controller = new PlayerController(
             player2,
             GameSettings.getKey(2, GameSettings.Control.LEFT),
@@ -124,7 +147,9 @@ public class FightScene extends ScreenAdapter {
         if (Gdx.input.isKeyJustPressed(
             GameSettings.getGlobalKey(GameSettings.Control.RESET)
         )) {
-            game.setScreen(new FightScene(game));
+            game.setScreen(
+                new FightScene(game, kaiWeaponsMode, player1Weapon, player2Weapon)
+            );
             dispose();
             return;
         }
@@ -143,21 +168,18 @@ public class FightScene extends ScreenAdapter {
         updateCamera(delta);
 
         viewport.apply();
-        shapeRenderer.setProjectionMatrix(camera.combined);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setColor(0.2f, 0.65f, 0.2f, 1f);
-        float visibleWidth = getVisibleWorldWidth();
-        float visibleHeight = getVisibleWorldHeight();
-        float groundBottom = camera.position.y - visibleHeight / 2f;
-        shapeRenderer.rect(
-            camera.position.x - visibleWidth / 2f,
-            groundBottom,
-            visibleWidth,
-            100f - groundBottom
-        );
-        shapeRenderer.end();
-
         batch.setProjectionMatrix(camera.combined);
+        batch.begin();
+        batch.draw(
+            backgroundTexture,
+            camera.position.x - getVisibleWorldWidth() / 2f,
+            camera.position.y - getVisibleWorldHeight() / 2f,
+            getVisibleWorldWidth(),
+            getVisibleWorldHeight()
+        );
+        batch.end();
+
+        shapeRenderer.setProjectionMatrix(camera.combined);
 
         batch.begin();
 
@@ -298,6 +320,7 @@ public class FightScene extends ScreenAdapter {
     @Override
     public void dispose() {
         batch.dispose();
+        backgroundTexture.dispose();
         shapeRenderer.dispose();
         hitFlashShader.dispose();
         player.dispose();

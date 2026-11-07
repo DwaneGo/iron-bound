@@ -19,7 +19,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Scaling;
 import com.badlogic.gdx.utils.ScreenUtils;
-import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.ExtendViewport;
 
 public class MainMenu extends ScreenAdapter {
 
@@ -40,7 +40,7 @@ public class MainMenu extends ScreenAdapter {
     @Override
     public void show() {
 
-        stage = new Stage(new FitViewport(800, 600));
+        stage = new Stage(new ExtendViewport(800, 600));
         Gdx.input.setInputProcessor(stage);
 
         // Font
@@ -381,6 +381,7 @@ public class MainMenu extends ScreenAdapter {
     private void addMenuBackground() {
         Image background = new Image(menuBackgroundTexture);
         background.setFillParent(true);
+        background.setScaling(Scaling.fill);
         stage.addActor(background);
         background.toBack();
     }

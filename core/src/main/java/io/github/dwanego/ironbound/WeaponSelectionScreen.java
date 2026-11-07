@@ -19,7 +19,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.Scaling;
-import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import io.github.dwanego.ironbound.player.Weapon;
 
 public class WeaponSelectionScreen extends ScreenAdapter {
@@ -73,7 +73,7 @@ public class WeaponSelectionScreen extends ScreenAdapter {
 
     @Override
     public void show() {
-        stage = new Stage(new FitViewport(800, 600));
+        stage = new Stage(new ExtendViewport(800, 600));
         Gdx.input.setInputProcessor(stage);
 
         font = new BitmapFont();
@@ -128,6 +128,7 @@ public class WeaponSelectionScreen extends ScreenAdapter {
         stage.clear();
         Image background = new Image(menuBackgroundTexture);
         background.setFillParent(true);
+        background.setScaling(Scaling.fill);
         stage.addActor(background);
         background.toBack();
 
